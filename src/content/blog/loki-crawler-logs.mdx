@@ -21,23 +21,23 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 這篇文章將從實務出發，介紹如何在 crawlers 專案中導入 Loki 與 Grafana，實作一套好用的日誌監控方案。主要內容包含：
 
-1. **為什麼需要日誌監控？**
+1. **為什麼需要日誌監控？** - <a href="#為什麼需要日誌監控"><i>Jump</i></a>
 
     描述 crawlers 的管理挑戰，以及 logs 在即時監控與錯誤追蹤中的重要性。
 
-2. **設計日誌內容**
+2. **設計日誌內容** - <a href="#設計日誌內容"><i>Jump</i></a>
 
     介紹日誌的設計原則，包括日誌等級、可結構化日誌設計原則，以及如何判斷哪些日誌值得記錄。
 
-2. **使用 Grafana Loki 收集日誌資料**
+2. **使用 Grafana Loki 收集日誌資料** - <a href="#使用-grafana-loki-收集日誌資料"><i>Jump</i></a>
 
     包含 Loki、Promtail 安裝與設定，如何將 crawler logs 傳送進 Loki。
 
-3. **透過 Grafana 可視化監控日誌**
+3. **透過 Grafana 可視化監控日誌** - <a href="#透過-grafana-可視化監控日誌"><i>Jump</i></a>
 
     如何建立 dashboard、撰寫 LogQL 查詢，以及設定告警通知機制。
 
-4. **應用實例與延伸建議**
+4. **應用實例與延伸建議** - <a href="#應用實例與延伸建議"><i>Jump</i></a>
 
     實際案例分享與一些擴充應用的建議。
 
@@ -67,7 +67,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
     若想瞭解各程式的整體執行狀況，以 crawler 舉例有 *階段成功和失敗資訊*、*最常失敗的目標網站*、*HTTP 狀態碼分布* 等，將需自行撰寫腳本分析散落的 log，成效不彰。
 
-![TODO:]()
+![TODO:](/images/loki-crawler-logs/temporary.png)
 <center>
   <p><strong>TODO:</strong></p>
 </center>
@@ -124,7 +124,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 撰寫日誌並不是單純的 `console.log("我到了這一行")` 就好。良好的日誌設計，應同時考量 **除錯效率**、**可視化需求** 以及 **機器可讀性** 等面向。
 
-![TODO: 準備 logs 範例的純文字版本]()
+![TODO: 準備 logs 範例的純文字版本](/images/loki-crawler-logs/temporary.png)
 <center>
   <p><strong>日誌中若參雜的一般、重要和錯誤資訊，以人工檢視相當沒有效率。</strong></p>
 </center>
@@ -279,7 +279,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 | Grafana  | 可視化介面 | 日誌資料的可視化與監控工具，負責提供 **使用者介面 (UI)**，讓使用者能夠查詢、分析與視覺化日誌資料。 |
 
 <center>
-  <img src='/images/loki-crawler-logs/flow-overview.png' alt='Loki 環境架構' width='85%' />
+  <img src='/images/loki-crawler-logs/flow-01-overview.png' alt='Loki 環境架構' width='85%' />
   <p><strong>構築 Loki 日誌系統的流程</strong></p>
 </center>
 
@@ -296,10 +296,10 @@ networks:
   loki:
 
 services:
-  node-app: # 參見章節【建立應用程式並輸出日誌】
-  loki: # 參見下方的 loki 段落
-  promtail: # 參見下方的 promtail 段落
-  grafana: # 參見下方的 grafana 段落
+  node-app: # 參見【建立應用程式並輸出日誌】小結
+  loki: # 參見【設定 Loki】小結
+  promtail: # 參見【設定 Promtail】小結
+  grafana: # 參見下一章【透過 Grafana 可視化監控日誌】
 ```
 
 > 完整 source code: [docker-compose.yaml](https://github.com/wazho/grafana-loki-practice/blob/main/docker-compose.yaml)
@@ -309,13 +309,13 @@ services:
 這個段落會建立一支模擬 crawler 的 Node.js 應用程式，並透過 `pino` 將 log 以結構化格式輸出到 stdout。
 
 <center>
-  <img src='/images/loki-crawler-logs/flow-step1.png' alt='Loki 環境架構' width='85%' />
+  <img src='/images/loki-crawler-logs/flow-02-step1.png' alt='Loki 環境架構: 設定應用程式' width='85%' />
   <p><strong>於應用程式階段輸出相應的 logs</strong></p>
 </center>
 
 #### node-app 的 Docker Compose 設定
 
-我們需要建立一個 Node.js 應用程式，並將其容器化為 **node-app** service。細節的設定如下：
+我們需要建立一個 Node.js 應用程式，並將其容器化為 **node-app** service。**docker-compose.yaml** 細節的設定如下：
 
 ```yaml
 services:
@@ -356,15 +356,77 @@ services:
 接下來我們將完成 Promtail 的服務與設定檔，讓日誌能從 container 被正確收集。
 
 <center>
-  <img src='/images/loki-crawler-logs/flow-step2.png' alt='Loki 環境架構' width='85%' />
-  <p><strong>透過 promtail 接收 logs</strong></p>
+  <img src='/images/loki-crawler-logs/flow-03-step2.png' alt='Loki 環境架構: 設定 Promtail' width='85%' />
+  <p><strong>透過 Promtail 接收 logs</strong></p>
+</center>
+
+#### promtail service
+
+我們同樣將 config 資料夾掛載到容器中，並指定 Promtail 的設定檔路徑。
+
+另外，也會將 `/var/run/docker.sock` 掛載到容器中，這是為了讓 Promtail 可以與 host 的 Docker Daemon 溝通，取得正在執行中的容器清單與相關資訊。這樣就能從 container 的 stdout 和 stderr 中擷取 log，搭配後續小節的 **promtail-config.yaml** 設定檔，即可完成 logs 的收集與傳送。
+
+**docker-compose.yaml** 細節的設定如下：
+
+```yaml
+services:
+  promtail:
+    image: grafana/promtail:3.4.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # 掛載 Docker socket，讓 Promtail 可以讀取容器資訊
+      - ./config:/mnt/config # 將 config 資料夾掛載到容器中
+    command: -config.file=/mnt/config/promtail-config.yaml
+    networks:
+      - loki
+```
+
+#### promtail 設定檔: promtail-config.yaml
+
+接下來，我們需要建立一個名為 **promtail-config.yaml** 的設定檔，供前述的 promtail service 使用。
+
+這份設定主要針對 Docker container 的 log 擷取，以下為設定內容：
+
+```yaml
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions: # 紀錄上次讀取到的日誌位置，避免重複擷取
+  filename: /tmp/positions.yaml
+
+clients: # 定義要將日誌推送到哪個 Loki instance
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs: # ①
+      - host: unix:///var/run/docker.sock
+    relabel_configs: # ②
+      - source_labels: [__meta_docker_container_name]
+        target_label: job
+        regex: '/(.*)'
+        replacement: $1
+```
+
+`scrape_configs` 各欄位說明：
+
+1. `docker_sd_configs`: 使用 Docker 的 **服務發現 (Service Discovery)** 機制，來自動獲取正在運行的 containers 資訊。
+2. `relabel_configs`: **重新標籤 (Relabeling)** 的設定，這裡我們將抓取到的 container 名稱標籤化為 `job`，方便後續查詢與過濾。
+
+### 設定 Loki
+
+後續，我們將完成 Loki 的服務與設定檔，讓 Promtail 能夠將日誌傳送至 Loki 儲存。
+
+<center>
+  <img src='/images/loki-crawler-logs/flow-04-step3.png' alt='Loki 環境架構: 設定 Loki' width='85%' />
+  <p><strong>將 Promtail 接受的日誌傳送至 Loki 儲存</strong></p>
 </center>
 
 #### loki service
 
 我們將額外的 config 資料夾掛載到容器中，並指定 Loki 的設定檔路徑。
 
-細節的設定如下：
+**docker-compose.yaml** 細節的設定如下：
 
 ```yaml
 services:
@@ -375,26 +437,6 @@ services:
     volumes:
       - ./config:/mnt/config # 將 config 資料夾掛載到容器中
     command: -config.file=/mnt/config/loki-config.yaml
-    networks:
-      - loki
-```
-
-#### promtail service
-
-我們同樣將 config 資料夾掛載到容器中，並指定 Promtail 的設定檔路徑。
-
-另外，也會將 `/var/run/docker.sock` 掛載到容器中，這是為了讓 Promtail 可以與 host 的 Docker Daemon 溝通，取得正在執行中的容器清單與相關資訊。這樣就能從 container 的 stdout 和 stderr 中擷取 log，搭配後續小節的 **promtail-config.yaml** 設定檔，即可完成 logs 的收集與傳送。
-
-細節的設定如下：
-
-```yaml
-services:
-  promtail:
-    image: grafana/promtail:3.4.1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock # 掛載 Docker socket，讓 Promtail 可以讀取容器資訊
-      - ./config:/mnt/config # 將 config 資料夾掛載到容器中
-    command: -config.file=/mnt/config/promtail-config.yaml
     networks:
       - loki
 ```
@@ -450,48 +492,88 @@ schema_config:
 
 Loki 會根據這個時間點來決定使用哪個 schema 來儲存資料，而這樣的設計讓我們可以在未來的版本中，針對不同的時間範圍使用不同的 schema，來定義出不同的 config 以避免一次性重建所有資料結構。
 
-#### promtail 設定檔: promtail-config.yaml
+### 小結
 
-接下來，我們需要建立一個名為 **promtail-config.yaml** 的設定檔，供前述的 promtail service 使用。
-
-這份設定主要針對 Docker container 的 log 擷取，以下為設定內容：
+在這一章中，我們介紹了如何使用 Promtail 和 Loki 來收集、儲存日誌資料。至此，目前的 **docker-compose.yaml** 配置檔如下：
 
 ```yaml
-server:
-  http_listen_port: 9080
-  grpc_listen_port: 0
+version: '3.8'
 
-positions: # 紀錄上次讀取到的日誌位置，避免重複擷取
-  filename: /tmp/positions.yaml
+networks:
+  loki:
 
-clients: # 定義要將日誌推送到哪個 Loki instance
-  - url: http://loki:3100/loki/api/v1/push
+services:
+  loki:
+    image: grafana/loki:3.4.1
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config:/mnt/config # 將 config 資料夾掛載到容器中
+    command: -config.file=/mnt/config/loki-config.yaml
+    networks:
+      - loki
 
-scrape_configs:
-  - job_name: docker
-    docker_sd_configs: # ①
-      - host: unix:///var/run/docker.sock
-    relabel_configs: # ②
-      - source_labels: [__meta_docker_container_name]
-        target_label: job
-        regex: '/(.*)'
-        replacement: $1
+  promtail:
+    image: grafana/promtail:3.4.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config:/mnt/config # 將 config 資料夾掛載到容器中
+    command: -config.file=/mnt/config/promtail-config.yaml
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin # 將帳號設定為 admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin # 將密碼設定為 admin
+    depends_on:
+      - loki
+    networks:
+      - loki
+
+  node-app:
+    build: ./app
+    container_name: node-app
+    labels:
+      job: "node-app"
+    restart: always
+    networks:
+      - loki
 ```
 
-`scrape_configs` 各欄位說明：
+前節所設定的 **promtail-config.yaml** 和 **loki-config.yaml** 將放置於 `./config` 資料夾中，並在 compose 期間掛載到容器當中。
 
-1. `docker_sd_configs`: 使用 Docker 的 **服務發現 (Service Discovery)** 機制，來自動獲取正在運行的 containers 資訊。
-2. `relabel_configs`: **重新標籤 (Relabeling)** 的設定，這裡我們將抓取到的 container 名稱標籤化為 `job`，方便後續查詢與過濾。
+```shell
+docker compose up --build
+```
 
 啟動完畢後，後續章節將接續目前的進度，將開始介紹如何在 Grafana 中進行日誌的可視化與監控。
 
 ## 透過 Grafana 可視化監控日誌
 
-> 編輯中。
+我們將延續前一章的內容，使用 Grafana 來可視化與監控 Loki 儲存的日誌資料。本章將說明如何設定 Grafana 與 Loki 的連線，並建立 dashboard 來觀察與分析日誌。內容包含：
 
-為了方便測試，我們將 Grafana 的帳號與密碼都設定為 `admin`。在第一次登入時，便不需要額外做設定。
+- 安裝與啟動 Grafana
+- 建立 dashboard 並使用 LogQL 查詢日誌
+- 設定 dashboard 告警條件
 
-細節的設定如下：
+### 安裝與啟動 Grafana
+
+[Grafana](https://grafana.com/) 是一套功能強大的可視化工具，能夠支援多種資料來源 (如 Prometheus、Loki、InfluxDB 等)，並透過圖表與查詢語言呈現即時資料狀態。對於 log 系統來說，Grafana 搭配 Loki 不僅能即時查詢文字 log，更能分析 log 結構化欄位、視覺化錯誤分布，甚至設定告警條件，是建構 **可觀測性 (Observability)** 的重要利器。
+
+#### grafana service
+
+<center>
+  <img src='/images/loki-crawler-logs/flow-05-step4.png' alt='Loki 環境架構: 設定 Grafana' width='85%' />
+  <p><strong>將 Loki 儲存的日誌資料可視化</strong></p>
+</center>
+
+在 docker-compose 中加入 Grafana 的服務設定，為了方便測試，我們預設帳號與密碼都設為 `admin`，避免首次登入還需額外設定。
+
+**docker-compose.yaml** 細節的設定如下：
 
 ```yaml
 services:
@@ -508,17 +590,100 @@ services:
       - loki
 ```
 
-- Grafana 介紹與安裝
-  - 連接 Loki 進行日誌可視化
-  - 設置爬蟲運行狀態 Dashboard
-- 使用 LogQL 查詢特定資料
-  - 查詢特定時間範圍內的錯誤
-  - 設定告警通知異常狀況
+#### 啟動與登入
 
-![](/images/loki-crawler-logs/01-grafana-add-data-source-loki.png)
-![](/images/loki-crawler-logs/02-grafana-add-data-source-loki-connection.png)
-![](/images/loki-crawler-logs/03-grafana-create-dashboard.png)
-![](/images/loki-crawler-logs/04-grafana-add-first-panel.png)
+完成設定後，回到專案根目錄執行以下指令，建立整個環境：
+
+```shell
+docker compose up --build
+```
+
+啟動成功後，造訪 [http://localhost:3000](http://localhost:3000) 即可進入 Grafana 介面，預設登入帳號密碼為：
+
+* Username: `admin`
+* Password: `admin`
+
+首次登入會要求變更密碼，若僅供本地測試可跳過。
+
+#### 在 Grafana 中新增 Loki 資料來源
+
+首次登入 Grafana 後，我們需要手動將 Loki 設為一個 **資料來源 (Data Source)**，讓 Grafana 知道該從哪裡取得日誌資料。
+
+依下列步驟操作：
+
+展開左側選單 **☰ (Menu)** 後，選擇 **Administration** > **Plugins and data** > **Plugins**。或是從 **Connections** > **Data sources** 進入，效果雷同。
+
+![](/images/loki-crawler-logs/loki-install-01-grafana-search-loki-plugin.png)
+
+接著，搜尋 **Loki**，點擊進入後選擇 **Add new data source** 按鈕。
+
+![](/images/loki-crawler-logs/loki-install-02-grafana-add-data-source-loki.png)
+
+設定 Loki 的連線資訊，輸入完畢後點擊下方的 **Save & test** 按鈕。
+
+![](/images/loki-crawler-logs/loki-install-03-grafana-add-data-source-loki-connection.png)
+
+建立完畢，從清單可見目前所有的資料來源。
+
+![](/images/loki-crawler-logs/loki-install-04-grafana-data-source-list.png)
+
+### 建立 dashboard 並使用 LogQL 查詢日誌
+
+完成資料來源設定後，我們就能開始在 Grafana 中建立 dashboard，透過 LogQL 查詢與視覺化分析日誌資料。
+
+#### 建立新的 dashboard 並加入 panel
+
+展開左側選單 **☰ (Menu)** 後，選擇 **Dashboards** 並點擊 **+ Create Dashboard** 按鈕。
+
+![](/images/loki-crawler-logs/dashboard-01-create-grafana-dashboard.png)
+
+進入新建立的 dashboard 後，點擊 **+ Add visualization** 按鈕。
+
+![](/images/loki-crawler-logs/dashboard-02-add-visualization.png)
+
+接著會需要選擇資料來源，這裡選擇剛剛新增的 Loki 資料來源。
+
+![](/images/loki-crawler-logs/dashboard-03-select-data-source.png)
+
+確認完畢後，會進入到編輯 **面板 (panel)** 的介面：
+
+![](/images/loki-crawler-logs/dashboard-04-edit-panel.png)
+
+我們先在右上方的 visualization 中選擇 **Table**，這樣就能將日誌資料以表格的方式呈現。
+
+![](/images/loki-crawler-logs/dashboard-05-change-visualization.png)
+
+接著在下方的 **Query** 區域中，輸入查詢語法：
+
+```logql
+{ service_name="node-app" }
+```
+
+並按下 **Run query** 按鈕，這樣就能查詢到所有來自 `node-app` 的日誌資料。
+
+![](/images/loki-crawler-logs/dashboard-06-loki-query.png)
+
+並在於 `Line` 的 column 中，可見應用程式所輸出的 stdout：
+
+![](/images/loki-crawler-logs/dashboard-07-table-log.png)
+
+以上確認無誤，或是再進行微調後，就可以點擊右上方的 **Save** 按鈕，將這個 dashboard 儲存起來。
+
+![](/images/loki-crawler-logs/dashboard-08-save-dashboard.png)
+
+至此，我們已成功從 Grafana 建立 dashboard，並完成了第一個 LogQL 查詢的呈現。接下來，我們可以進一步將查詢轉為統計圖表，或建立告警條件來即時監控異常狀況。
+
+#### 撰寫 LogQL 查詢語法
+
+在前一小節中，我們所撰寫的查詢語法叫做 [**LogQL**](http://grafana.com/docs/loki/latest/query/)，可用來針對 log 進行搜尋、過濾、統計與聚合。
+
+### 設定 dashboard 告警條件
+
+
+
+## 應用實例與延伸建議
+
+> 編輯中。
 
 ### 範例程式下載
 
@@ -534,7 +699,3 @@ cd grafana-loki-practice
 # 建立 docker-compose 環境
 docker-compose up -d
 ```
-
-## 應用實例與延伸建議
-
-> 編輯中。
