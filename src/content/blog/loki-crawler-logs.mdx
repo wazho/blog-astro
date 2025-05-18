@@ -217,13 +217,13 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 ### 可結構化的日誌設計原則
 
-當你需要快速回答「哪一支爬蟲最常出錯？」或「哪個網址平均最慢？」等類似問題時，扁平化的文字 log 幾乎無法幫上忙，而結構化的 log 則能輕鬆達成。
+當你需要快速回答「哪一支爬蟲最常出錯？」或「哪個網址平均訪問最慢？」等類似問題時，扁平化的文字 log 幾乎無法幫上忙，而結構化的 log 則能輕鬆達成。
 
 在 JavaScript 或 Node.js 實務中，雖然 `console.log()` 是最簡單快速的輸出方式，但若希望日誌能被機器判讀、具備良好的過濾條件與分析能力，「可結構化」就變得相當重要。
 
 所謂 **可結構化日誌 (Structured Logging)**，是指使用具明確欄位命名的格式 (最常見為 JSON) 輸出 log。這樣的做法能讓日誌系統 (如 Loki) 更容易針對欄位進行搜尋與 **聚合 (Aggregation)**，有助於提升查詢效率、視覺化呈現能力，以及與告警系統的整合性。
 
-例如，若我們在爬取資料過程中發生了錯誤，傳統的 log 記錄方式可能會是：
+例如，若我們在爬取資料過程中發生了解析 JSON 錯誤，傳統的 log 記錄方式可能會是：
 
 ```text
 2025-01-01 12:00:04 - ERROR - Failed to parse response JSON
@@ -232,8 +232,14 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 以 JSON-based 的格式呈現，會變成：
 
 ```json
+{ "timestamp": "2025-01-01T12:00:04.000Z", "level": "error", "message": "Failed to parse response JSON" }
+```
+
+為了方便解說，將 JSON 的排版稍作優化：
+
+```json
 {
-  "timestamp": "2025-01-01T12:00:04Z", // 時間戳記，通常以國際標準 ISO 8601 格式表示，方便後續查詢與排序。
+  "timestamp": "2025-01-01T12:00:04.000Z", // 時間戳記，通常以國際標準 ISO 8601 格式或 UNIX epoch 表示，方便後續查詢與排序。
   "level": "error", // 日誌等級，例如 info、warn、error，用來快速分類與過濾。
   "message": "Failed to parse response JSON" // 實際的訊息內容，可搭配 error stack 或說明文字。
 }
@@ -243,7 +249,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 ```json
 {
-  "timestamp": "2025-01-01T12:00:04Z",
+  "timestamp": "2025-01-01T12:00:04.000Z",
   "level": "error",
   "message": "Failed to parse response JSON",
   "url": "https://example.com/api/data", // 發生錯誤的請求網址，有助於追蹤特定目標來源。
@@ -343,7 +349,7 @@ services:
 {
   "level": "info",
   "message": "Fetched data successfully",
-  "timestamp": "2025-01-01T12:00:00Z"
+  "timestamp": "2025-01-01T12:00:00.000Z"
 }
 ```
 
@@ -557,7 +563,8 @@ docker compose up --build
 我們將延續前一章的內容，使用 Grafana 來可視化與監控 Loki 儲存的日誌資料。本章將說明如何設定 Grafana 與 Loki 的連線，並建立 dashboard 來觀察與分析日誌。內容包含：
 
 - 安裝與啟動 Grafana
-- 建立 dashboard 並使用 LogQL 查詢日誌
+- 建立 dashboard 並加入 panel
+- 撰寫 LogQL 查詢語言
 - 設定 dashboard 告警條件
 
 ### 安裝與啟動 Grafana
@@ -627,11 +634,11 @@ docker compose up --build
 
 ![](/images/loki-crawler-logs/loki-install-04-grafana-data-source-list.png)
 
-### 建立 dashboard 並使用 LogQL 查詢日誌
+### 建立 dashboard 並加入 panel
 
 完成資料來源設定後，我們就能開始在 Grafana 中建立 dashboard，透過 LogQL 查詢與視覺化分析日誌資料。
 
-#### 建立新的 dashboard 並加入 panel
+#### 建立新的 dashboard
 
 展開左側選單 **☰ (Menu)** 後，選擇 **Dashboards** 並點擊 **+ Create Dashboard** 按鈕。
 
@@ -642,6 +649,8 @@ docker compose up --build
 ![](/images/loki-crawler-logs/dashboard-02-add-visualization.png)
 
 接著會需要選擇資料來源，這裡選擇剛剛新增的 Loki 資料來源。
+
+#### 加入 panel
 
 ![](/images/loki-crawler-logs/dashboard-03-select-data-source.png)
 
@@ -655,7 +664,7 @@ docker compose up --build
 
 接著在下方的 **Query** 區域中，輸入查詢語法：
 
-```logql
+```plaintext
 { service_name="node-app" }
 ```
 
@@ -673,13 +682,105 @@ docker compose up --build
 
 至此，我們已成功從 Grafana 建立 dashboard，並完成了第一個 LogQL 查詢的呈現。接下來，我們可以進一步將查詢轉為統計圖表，或建立告警條件來即時監控異常狀況。
 
-#### 撰寫 LogQL 查詢語法
+### 撰寫 LogQL 查詢語言
 
 在前一小節中，我們所撰寫的查詢語法叫做 [**LogQL**](http://grafana.com/docs/loki/latest/query/)，可用來針對 log 進行搜尋、過濾、統計與聚合。
 
+LogQL 支援兩種主要查詢類型：
+
+1. **Log queries (日誌查詢)**: 用於直接搜尋日誌內容
+    * [官方說明文件](https://grafana.com/docs/loki/latest/query/log_queries/)
+2. **Metric queries (指標查詢)**: 從日誌中產生時間序列資料，進行聚合統計
+    * [官方說明文件](https://grafana.com/docs/loki/latest/query/metric_queries/)
+
+#### Log queries
+
+Log queries 用於「查找具體的日誌行資料」，由 **log stream selector** 搭配 **log pipeline** 組成，基本語法如下：
+
+```plaintext
+{ log_stream_selector } | pipeline_1 | pipeline_2 ...
+```
+
+* Log stream selector 使用 `{` 和 `}` 所包覆，以 `key=value` 組合描述來源，可使用 `,` 串接多條件。
+* Log pipeline 則是用來對查詢結果進行處理，通常會使用 `|` 符號來串接多個 pipeline，例如：
+
+範例如下：
+
+```plaintext
+{ job="analyzer" } | json | level="error" | line_format "{{.message}}"
+```
+
+語法拆解說明：
+
+* `{ job="analyzer" }`: 只過濾出 `job` 為 `analyzer` 的 log
+* `| json`: 將 log 解析為 JSON 格式
+* `| level="error"`: 過濾出 `level` 為 `error` 的 log
+* `| line_format "{{.message}}"`: 只顯示 `message` 欄位的內容
+
+#### Metric queries
+
+Metric queries 則是用來「擴展查詢結果，進行統計或聚合」，基本語法如下：
+
+```plaintext
+aggregation_function({ log_stream_selector } | pipeline_1 ... [range])
+```
+
+例如：
+
+```plaintext
+count_over_time({ job="analyzer" } | json | level="error" [5m])
+```
+
+這段語法的用意是：統計過去 5 分鐘內，來自 `analyzer` job 且 `level=error` 的 log 出現次數。
+
+此外，metric queries 分為 **log range aggregations** 和 **unwrapped range aggregations** 兩種。
+
+- **Log range aggregations**: 用來統計某段時間內的 log 數量，例如錯誤出現次數。
+- **Unwrapped range aggregations**: 針對 log 中的欄位之數值進行平均、最大值等數據運算。
+
+這兩者屬於進階用法，會在後續章節的實例中再進行更詳細的說明。
+
+#### 使用 LogQL simulator
+
+如果手邊暫時無法搭建 Loki 環境或模擬應用程式輸出的日誌行為，可以先透過 Grafana 官方提供的 [LogQL simulator](https://grafana.com/docs/loki/latest/query/analyzer/) 進行語法測試與練習。
+
+它適合快速驗證語法是否正確，也能協助理解不同 log pipeline 的操作效果。
+
+若以下 logs 資料為我們的應用程式所輸出：
+
+```json
+{ "timestamp": "2025-01-01T12:00:00.000Z", "level": "info", "message": "Crawler started", "env": "production" }
+{ "timestamp": "2025-01-01T12:00:01.000Z", "level": "info", "message": "Fetching data from URL", "url": "https://example.com/api/data" }
+{ "timestamp": "2025-01-01T12:00:02.000Z", "level": "info", "message": "Received response", "statusCode": 200, "durationMs": 982 }
+{ "timestamp": "2025-01-01T12:00:03.000Z", "level": "warn", "message": "Response time is high", "durationMs": 1200 }
+{ "timestamp": "2025-01-01T12:00:04.000Z", "level": "error", "message": "Failed to parse response JSON", "url": "https://example.com/api/data" }
+```
+
+我們承襲上方的範例，過濾出 `level` 為 `error` 的 log，便可以使用以下 LogQL 的 log queries 語法：
+
+```plaintext
+{ job="analyzer" } | json | level="error" | line_format "{{.message}}"
+```
+
+效果如下：
+
+![](/images/loki-crawler-logs/logql-01-example1.png)
+
 ### 設定 dashboard 告警條件
 
+除了查詢與視覺化日誌資料外，Grafana 也能根據查詢結果設定 **告警條件 (Alerts)**，當某些異常狀況發生時 (如錯誤率過高、特定 log 出現頻繁)，可以即時通知開發或維運人員，提升系統可觀測性與反應效率。
 
+本節將以「過去 5 分鐘內 error log 數量超過閾值」為例，示範如何在現有的 dashboard panel 上建立告警條件。
+
+#### 建立告警規則的步驟
+
+在 Grafana 的 dashboard 中，選擇剛剛建立的 panel，展開右上方的選單 **⋮ (Menu)**，再展開 **More...** 選項，接著選擇 **New alert rule** 選項。
+
+![](/images/loki-crawler-logs/alerting-01-new-alert-rule.png)
+
+
+
+> 編輯中。
 
 ## 應用實例與延伸建議
 
