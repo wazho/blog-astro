@@ -778,11 +778,90 @@ count_over_time({ job="analyzer" } | json | level="error" [5m])
 
 ![](/images/loki-crawler-logs/alerting-01-new-alert-rule.png)
 
-
-
 > 編輯中。
 
 ## 應用實例與延伸建議
+
+最後，將介紹一些實際應用的案例，過程中會逐步引導如何設計 logs 到建立相對應的 dashboard。
+
+### 確認要觀察的目標
+
+在設計 log 結構與 dashboard 前，最重要的是先釐清「想觀察什麼」，以便針對性地紀錄資料。
+
+| 目標 | 典型問題範例 |
+| ---- | -------------------- |
+| 狀態概覽 | 目前有哪些任務執行中？是否有模組沒在動？ |
+| 成效分析 | 處理成功率？失敗率？ |
+| 錯誤追蹤 | 哪些類型的錯誤最常發生？在什麼模組？ |
+| 效能監控 | 每次任務花多久？最久是哪一次？  |
+| 日誌查詢 | 最近是否有異常？錯誤訊息為何？ |
+| 行為趨勢 | 某變數過去 3 小時是否有異常升高？ |
+
+#### 狀態概覽
+
+我們以以下這則 log 為例：
+
+```json
+{
+  "timestamp": "2025-05-24T01:23:45.678Z",
+  "level": "INFO",
+  "message": "Current progress",
+  "executionId": "run-001",
+  "status": "RUNNING",
+  "module": "Crawler-A",
+  "numToProcess": 1000,
+  "numProcessed": 420
+}
+```
+
+這筆 log 主要用於記錄任務的進行狀態。欄位設計上：
+* `executionId`: 可用來追蹤每次任務的執行實例
+* `status`: 目前的任務狀態 (如 RUNNING、COMPLETED)
+* `numToProcess` / `numProcessed`: 顯示任務總數與目前已處理的數量
+
+透過這些欄位，我們可以在 Grafana 中建立一個 dashboard panel，並設定以下 Query：
+
+```plaintext
+{ job="node-app" } | json | message="Current progress"
+```
+
+並在 Transform data 中使用 **Extract fields** 的 transformation：
+
+![](/images/loki-crawler-logs/panel-01-extract-fields-transformation.png)
+
+於 **Source** 中選擇 **Line**，將該欄位提取出來；於 **Format** 中選擇 **Key+value pairs**，將以 JSON 進行解析：
+
+![](/images/loki-crawler-logs/panel-02-extract-fields-format.png)
+
+接著點選 **+ Add another transformation**，使用 **Organize fields by name** 的 transformation：
+
+![](/images/loki-crawler-logs/panel-03-organize-fields-transformation.png)
+
+並依照需求調整表格內欄位順序、顯示與否：
+
+![](/images/loki-crawler-logs/panel-04-organize-fields-setting.png)
+
+最後按下 **Save** 或 **Apply**，可以觀察到新建立的 panel 與未使用 transformation 前的差異：
+
+![](/images/loki-crawler-logs/panel-05-result.png)
+
+### 成效分析
+
+> 編輯中。
+
+### 錯誤追蹤
+
+> 編輯中。
+
+### 效能監控
+
+> 編輯中。
+
+### 日誌查詢
+
+> 編輯中。
+
+### 行為趨勢
 
 > 編輯中。
 
