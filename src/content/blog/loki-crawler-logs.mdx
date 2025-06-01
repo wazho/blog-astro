@@ -37,7 +37,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
     如何建立 dashboard、撰寫 LogQL 查詢，以及設定告警通知機制。
 
-4. **應用實例與延伸建議** - <a href="#應用實例與延伸建議"><i>Jump</i></a>
+4. **應用實例** - <a href="#應用實例"><i>Jump</i></a>
 
     實際案例分享與一些擴充應用的建議。
 
@@ -67,10 +67,10 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
     若想瞭解各程式的整體執行狀況，以 crawler 舉例有 *階段成功和失敗資訊*、*最常失敗的目標網站*、*HTTP 狀態碼分布* 等，將需自行撰寫腳本分析散落的 log，成效不彰。
 
-![TODO:](/images/loki-crawler-logs/temporary.png)
+{/* ![TODO:](/images/loki-crawler-logs/temporary.png)
 <center>
   <p><strong>TODO:</strong></p>
-</center>
+</center> */}
 
 ### 什麼樣的資料適合收集？
 
@@ -124,7 +124,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 撰寫日誌並不是單純的 `console.log("我到了這一行")` 就好。良好的日誌設計，應同時考量 **除錯效率**、**可視化需求** 以及 **機器可讀性** 等面向。
 
-![TODO: 準備 logs 範例的純文字版本](/images/loki-crawler-logs/temporary.png)
+{/* ![TODO: 準備 logs 範例的純文字版本](/images/loki-crawler-logs/temporary.png) */}
 <center>
   <p><strong>日誌中若參雜的一般、重要和錯誤資訊，以人工檢視相當沒有效率。</strong></p>
 </center>
@@ -778,9 +778,7 @@ count_over_time({ job="analyzer" } | json | level="error" [5m])
 
 ![](/images/loki-crawler-logs/alerting-01-new-alert-rule.png)
 
-> 編輯中。
-
-## 應用實例與延伸建議
+## 應用實例
 
 最後，將介紹一些實際應用的案例，過程中會逐步引導如何設計 logs 到建立相對應的 dashboard。
 
@@ -788,18 +786,20 @@ count_over_time({ job="analyzer" } | json | level="error" [5m])
 
 在設計 log 結構與 dashboard 前，最重要的是先釐清「想觀察什麼」，以便針對性地紀錄資料。
 
-| 目標 | 典型問題範例 |
-| ---- | -------------------- |
-| 狀態概覽 | 目前有哪些任務執行中？是否有模組沒在動？ |
-| 成效分析 | 處理成功率？失敗率？ |
-| 錯誤追蹤 | 哪些類型的錯誤最常發生？在什麼模組？ |
-| 效能監控 | 每次任務花多久？最久是哪一次？  |
-| 日誌查詢 | 最近是否有異常？錯誤訊息為何？ |
-| 行為趨勢 | 某變數過去 3 小時是否有異常升高？ |
+| 目標 | 典型問題範例 | 採用的 Visualization |
+| ---- | -------------------- | ------ |
+| 狀態概覽 | 目前有哪些任務執行中，進度如何？ | Table |
+| 成效分析 | 處理成功率？失敗率？ | Pie Chart |
+| 日誌紀錄 | 最近是否有異常？錯誤訊息為何？ | Logs |
+| 行為趨勢 | 某變數過去 3 小時是否有異常升高？ | Time series |
+
+預期會製作成以下的 dashboard：
+
+![](/images/loki-crawler-logs/dashboard-overview.png)
 
 #### 狀態概覽
 
-我們以以下這則 log 為例：
+以下這則 log 是用來記錄任務進行狀態的範例：
 
 ```json
 {
@@ -814,58 +814,176 @@ count_over_time({ job="analyzer" } | json | level="error" [5m])
 }
 ```
 
-這筆 log 主要用於記錄任務的進行狀態。欄位設計上：
+欄位設計說明：
 * `executionId`: 可用來追蹤每次任務的執行實例
 * `status`: 目前的任務狀態 (如 RUNNING、COMPLETED)
 * `numToProcess` / `numProcessed`: 顯示任務總數與目前已處理的數量
 
-透過這些欄位，我們可以在 Grafana 中建立一個 dashboard panel，並設定以下 Query：
+這些欄位可協助我們在 Grafana 中建立任務進度的 Table panel，並設定以下 Query 過濾出 `Current progress` 的 logs：
 
 ```plaintext
 { job="node-app" } | json | message="Current progress"
 ```
 
-並在 Transform data 中使用 **Extract fields** 的 transformation：
+接著 Transform data 中使用 **Extract fields** 的 transformation：
 
-![](/images/loki-crawler-logs/panel-01-extract-fields-transformation.png)
+![](/images/loki-crawler-logs/panel-table-01-extract-fields-transformation.png)
 
 於 **Source** 中選擇 **Line**，將該欄位提取出來；於 **Format** 中選擇 **Key+value pairs**，將以 JSON 進行解析：
 
-![](/images/loki-crawler-logs/panel-02-extract-fields-format.png)
+![](/images/loki-crawler-logs/panel-table-02-extract-fields-format.png)
 
 接著點選 **+ Add another transformation**，使用 **Organize fields by name** 的 transformation：
 
-![](/images/loki-crawler-logs/panel-03-organize-fields-transformation.png)
+![](/images/loki-crawler-logs/panel-table-03-organize-fields-transformation.png)
 
 並依照需求調整表格內欄位順序、顯示與否：
 
-![](/images/loki-crawler-logs/panel-04-organize-fields-setting.png)
+![](/images/loki-crawler-logs/panel-table-04-organize-fields-setting.png)
 
 最後按下 **Save** 或 **Apply**，可以觀察到新建立的 panel 與未使用 transformation 前的差異：
 
-![](/images/loki-crawler-logs/panel-05-result.png)
+![](/images/loki-crawler-logs/panel-table-05-result.png)
 
 ### 成效分析
 
-> 編輯中。
+執行結束後，我們通常會希望了解該任務的處理結果，例如：
 
-### 錯誤追蹤
+- 成功處理幾筆？
+- 有多少筆失敗？
+- 是否有資料被略過？
 
-> 編輯中。
+以下這筆 log 用於紀錄任務執行結尾的總結資訊：
 
-### 效能監控
+```json
+{
+  "timestamp": "2025-05-24T01:23:45.678Z",
+  "level": "INFO",
+  "message": "Summary of task",
+  "executionId": "run-001",
+  "module": "Crawler-A",
+  "numToProcess": 1000,
+  "numProcessed": 1000,
+  "numFailed": 50,
+  "numSkipped": 10
+}
+```
 
-> 編輯中。
+欄位設計說明：
+* `numToProcess`: 任務總筆數
+* `numProcessed` / `numFailed` / `numSkipped`: 分別對應成功、失敗、略過的資料筆數
 
-### 日誌查詢
+這些欄位可協助我們在 Grafana 中建立任務進度的 Pie Chart panel，視覺化顯示處理結果的比例分佈。
 
-> 編輯中。
+在 Query 區塊輸入以下語法，過濾出 `Summary of task` 類型的 logs：
+
+```plaintext
+{ job="node-app" } | json | message="Summary of task"
+```
+
+並在 Visualization 中選擇 **Pie chart**，接著在 **Field** 中選擇 `numProcessed`、`numFailed` 與 `numSkipped` 欄位：
+
+![](/images/loki-crawler-logs/panel-pie-chart-01-visualization.png)
+
+為了讓要資料能夠被 Pie chart 正確解析，在 **Transform data** 中依序使用以下四種 transformations：
+
+1. **Extract fields**: 將 `numProcessed`、`numFailed` 與 `numSkipped` 欄位提取出來
+    * Source 選擇 **Line**
+    * Format 選擇 **Key+value pairs**
+    * 勾選 **Replace all fields**
+2. **Reduce fields**: 只需要最新的一筆資料
+    * Mode 選擇 **Reduce fields**
+    * Calculations 選擇 **First \*** 或 **First**
+3. **Organize fields by name**: 將欄位調整為視覺化時使用的標籤名稱
+    * 將 `numProcessed` 更名為 `Success`
+    * 將 `numFailed` 更名為 `Failed`
+    * 將 `numSkipped` 更名為 `Skipped`
+4. **Convert field type**: 將欄位轉換為數值型別，才能夠被 Pie chart 正確解析
+    * 將 `Processed`、`Failed` 與 `Skipped` 欄位轉換為 **Number**
+
+過程中，可開啟 **Table view** 模式觀察 transformation 的效果是否合乎期待：
+
+![](/images/loki-crawler-logs/panel-pie-chart-02-table-view.png)
+
+確認資料設定符合預期後，可以再將其關閉。
+
+接著在 **Visualization** 中調整 Pie chart 的樣式與顯示方式：
+
+* **Piechart type**: 設定為 **Donut**
+* **Labels**: 設定為 **Percent**
+
+即會呈現如下結果：
+
+![](/images/loki-crawler-logs/panel-pie-chart-03-result.png)
+
+### 日誌紀錄
+
+除了透過統計與圖表來掌握任務概況，我們有時也需要直接查看原始日誌內容，以協助下數幾種情境：
+
+- 確認錯誤訊息的細節與上下文
+- 排查非預期的行為或資料問題
+- 驗證系統是否如預期執行流程
+
+為了查看所有 log 訊息 (包含 INFO、ERROR 等層級)，我們可以沿用前面範例所產生的 logs，在 Query 區塊輸入以下語法，完整接收所有輸出：
+
+```plaintext
+{ job="node-app" } | json
+```
+
+並在 Visualization 中選擇 **Logs**，這樣就能直接查看所有來自 `node-app` 的日誌行為。
+
+![](/images/loki-crawler-logs/panel-logs-01-visualization.png)
+
+然而，呈現的資料格式不夠直觀，我們可以使用 `line_format` 來調整日誌的顯示格式，使其更易讀。
+
+```plaintext
+{ job="node-app" } | json | line_format "[{{.module}}] [{{.level}}] ▶️ {{.message}}"
+```
+
+這段設定會將原始 log 轉為類似這樣的格式：
+
+```plaintext
+[Crawler-A] [INFO] ▶️ Current progress
+```
+
+![](/images/loki-crawler-logs/panel-logs-02-line-format.png)
 
 ### 行為趨勢
 
-> 編輯中。
+除了統計每次任務的總結結果，我們有時也希望觀察某些「變數在時間上的變化趨勢」，以便找出異常升高或某段時間異常高頻率的狀況。
 
-### 範例程式下載
+舉例來說，我們可能會希望知道：
+
+- 哪段時間 `numFailed` 明顯上升？
+- 哪些模組在某個時段特別不穩定？
+
+這類觀察非常適合使用 `unwrap` 搭配 `max_over_time` 函數，將 log 中的欄位拉出來轉為 time series 數據，進而畫出時間趨勢圖。
+
+```plaintext
+max_over_time(
+  { job="node-app" }
+    | json
+    | message="Current progress"
+    | unwrap numFailed
+  [$__interval]
+) by (executionId)
+```
+
+* `unwrap numFailed`: 從 log 中取出 `numFailed` 欄位作為數值
+* `max_over_time(...)`: 在每個時間區段中取最大值，其中 `$__interval` 會自動根據 dashboard 的時間範圍調整
+* `by (module)`: 依照 module label 分組，讓每個模組產生一條獨立的 time series
+
+在 Visualization 中選擇 **Time series**，搭配 **Table view** 檢視檢視得知，各時間點的 `numFailed` 數值已被正確提取出來。
+
+![](/images/loki-crawler-logs/panel-time-series-01-visualization.png)
+
+由於先前已在 Query 中使用了 `by (executionId)`，因此每個 `executionId` 都會有一條獨立的線條，這樣就能清楚看到每次任務的失敗數量隨時間的變化。
+
+![](/images/loki-crawler-logs/panel-time-series-02-result.png)
+
+從上圖可以看出，某些任務在特定時間點的 `numFailed` 明顯上升，進而可以對系統現況進行更深入的分析。
+
+## 範例程式下載
 
 > 完整範例 source code: [wazho/grafana-loki-practice](https://github.com/wazho/grafana-loki-practice)
 
