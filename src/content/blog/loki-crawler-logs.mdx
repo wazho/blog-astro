@@ -43,7 +43,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 ## 為什麼需要日誌監控？
 
-當系統規模尚小、程式數量不多時，偵錯階段通常可以靠 **標準輸出 (stdout)** 和標準 **錯誤輸出 (stderr)** 直接在 terminal 或 console 上查看，抑或是將 log 輸出至檔案中。
+當系統規模尚小、程式數量不多時，偵錯階段通常可以靠 **標準輸出 (stdout)** 和 **標準錯誤輸出 (stderr)** 直接在 terminal 或 console 上查看，抑或是將 log 輸出至檔案中。
 
 倘若規模逐步擴大後，若採用相同方式進行管理，將會面臨以下幾個挑戰：
 
@@ -293,7 +293,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 #### 撰寫 docker-compose.yaml 的起手式
 
-接下來，我們會建立一份名為 **docker-compose.yaml** 的檔案，並在其中定義四個服務：*Loki*、*Promtail*、*Grafana* 與 Node.js 應用程式。
+接下來，我們會建立一份名為 **docker-compose.yaml** 的檔案，並在其中定義四個服務：*Loki*、*Promtail*、*Grafana* 與 *Node.js 應用程式*。
 
 ```yaml
 version: '3.8'
