@@ -29,36 +29,20 @@ export const siteConfig = {
     navLinks: [
       {
         text: 'Blog',
-        href: '/blog',
+        href: '/',
       },
       // {
-      //   text: 'Notes',
-      //   href: '/blog/notes',
+      //   text: 'Projects',
+      //   href: '/projects',
       // },
-      // {
-      //   text: 'Talks',
-      //   href: '/blog/talks',
-      // },
-      {
-        text: 'Projects',
-        href: '/projects',
-      },
     ],
   },
   page: {
     blogLinks: [
       {
         text: 'Blog',
-        href: '/blog',
+        href: '/',
       },
-      // {
-      //   text: 'Notes',
-      //   href: '/blog/notes',
-      // },
-      // {
-      //   text: 'Talks',
-      //   href: '/blog/talks',
-      // },
     ],
   },
   footer: {
@@ -70,14 +54,6 @@ export const siteConfig = {
       // {
       //   text: 'Markdown Style',
       //   href: '/md-style',
-      // },
-      // {
-      //   text: 'View on Astro',
-      //   href: 'https://astro.build/themes/details/vitesse-theme-for-astro/',
-      // },
-      // {
-      //   text: 'GitHub Repository',
-      //   href: 'https://github.com/kieranwv/astro-theme-vitesse',
       // },
     ],
   },

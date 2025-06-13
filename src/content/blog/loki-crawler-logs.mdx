@@ -199,7 +199,7 @@ Lawsnote 提供的 [Lawsnote Search](https://lawsnote.com/) (法學搜尋引擎)
 
 - **可用於判斷系統是否「有在運作」**
 
-  包含任務的開始、結束、請求是否成功等，這些都是觀察系統狀態的基礎資訊。這類訊息適合設為 `info` 等級，作為系統流程的日常記錄依據。
+  包含任務的開始、結束、請求是否成功等，這些都是觀察系統狀態的基礎資訊。這類訊息適合設為 `info` 等級，作為系統流程的日常紀錄依據。
 
 - **可用於觀察效能瓶頸或趨勢**
 
@@ -397,7 +397,7 @@ server:
   http_listen_port: 9080
   grpc_listen_port: 0
 
-positions: # 紀錄上次讀取到的日誌位置，避免重複擷取
+positions: # 記錄上次讀取到的日誌位置，避免重複擷取
   filename: /tmp/positions.yaml
 
 clients: # 定義要將日誌推送到哪個 Loki instance
@@ -784,7 +784,7 @@ count_over_time({ job="analyzer" } | json | level="error" [5m])
 
 ### 確認要觀察的目標
 
-在設計 log 結構與 dashboard 前，最重要的是先釐清「想觀察什麼」，以便針對性地紀錄資料。
+在設計 log 結構與 dashboard 前，最重要的是先釐清「想觀察什麼」，以便針對性地記錄資料。
 
 | 目標 | 典型問題範例 | 採用的 Visualization |
 | ---- | -------------------- | ------ |
@@ -853,7 +853,7 @@ count_over_time({ job="analyzer" } | json | level="error" [5m])
 - 有多少筆失敗？
 - 是否有資料被略過？
 
-以下這筆 log 用於紀錄任務執行結尾的總結資訊：
+以下這筆 log 用於記錄任務執行結尾的總結資訊：
 
 ```json
 {
